@@ -1,0 +1,95 @@
+name: Build MS-DOS
+
+on:
+  push:
+    branches: [ main, dev ]
+  pull_request:
+    branches: [ main, dev ]
+  workflow_dispatch:
+
+jobs:
+  build-msdos:
+    # Rocks'n'Diamonds for MS-DOS / FreeDOS: a 32-bit DJGPP program with
+    # CWSDPMI built in. The compiler is the one msdos/build-djgpp.sh builds
+    # (gcc 14.2.0), the same as a local build; it is cached, so only the
+    # first run (or a change to build-djgpp.sh) spends the hour building it.
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install Dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends \
+          bison flex curl gcc g++ make texinfo zlib1g-dev tar bzip2 gzip xz-utils \
+          unzip python3-dev m4 dos2unix nasm git patch perl zip
+
+    - name: Restore DJGPP
+      id: djgpp-cache
+      uses: actions/cache@v4
+      with:
+        path: ~/djgpp
+        key: djgpp-${{ runner.os }}-${{ hashFiles('msdos/build-djgpp.sh') }}
+
+    - name: Build DJGPP (gcc 14.2.0)
+      if: steps.djgpp-cache.outputs.cache-hit != 'true'
+      working-directory: msdos
+      run: |
+        WORK="$RUNNER_TEMP/build-djgpp" sh build-djgpp.sh
+
+    - name: Build
+      working-directory: msdos
+      run: |
+        "$HOME/djgpp/bin/i586-pc-msdosdjgpp-gcc" --version | head -n 1
+        make DOCKER=0 DJGPP="$HOME/djgpp" -j"$(nproc)" dist
+
+    - name: Prepare Artifacts
+      run: |
+        mkdir -p dist
+        (cd msdos/build/dist && zip -r -q -9 "$GITHUB_WORKSPACE/dist/RocksnDiamonds-DOS.zip" RND)
+        ls -l dist
+
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: rocksndiamonds-dos
+        path: dist/RocksnDiamonds-DOS.zip
+        retention-days: 7
+
+  create-release:
+    needs: build-msdos
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    if: github.event_name == 'push'
+
+    steps:
+    - name: Download DOS Artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: rocksndiamonds-dos
+        path: release
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+        files: release/RocksnDiamonds-DOS.zip
+        tag_name: ${{ github.ref == 'refs/heads/main' && format('v{0}', github.run_number) || format('dev-v{0}', github.run_number) }}
+        name: ${{ github.ref == 'refs/heads/main' && format('Release v{0}', github.run_number) || format('Dev Build v{0}', github.run_number) }}
+        draft: false
+        prerelease: ${{ github.ref != 'refs/heads/main' }}
+        make_latest: ${{ github.ref == 'refs/heads/main' }}
+        body: |
+          ## ${{ github.ref == 'refs/heads/main' && 'Stable Release' || 'Development Build' }}
+
+          **Commit:** ${{ github.sha }}
+          **Build:** #${{ github.run_number }}
+
+          ### 💎 Rocks'n'Diamonds for MS-DOS
+          Rocks'n'Diamonds 4.4.2.4 as a 32-bit DPMI program (CWSDPMI built in), on SDL3's DOS port.
+
+          ### 📦 Downloads
+          - **RocksnDiamonds-DOS.zip** — the RND folder: unzip anywhere and run `RND.EXE`.
+
+          Needs a Pentium, 128 MB of RAM, a VESA card with 800x600 in 15/16/24/32 bpp, and a long file name driver (DOSLFN, or Windows 9x). Optional: Sound Blaster, mouse, gameport joystick, packet driver for network games.
+          In DOSBox-X: `dosbox-x -conf dosbox-x.conf` from the RND folder. See README.TXT inside.

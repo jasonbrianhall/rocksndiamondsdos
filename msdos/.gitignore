@@ -1,0 +1,11 @@
+build-djgpp/
+build/
+build-debug/
+rnd.exe
+CWSDPMI.EXE
+/graphics/
+/sounds/
+/music/
+/levels/
+/conf/
+/docs/
