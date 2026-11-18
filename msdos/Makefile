@@ -124,7 +124,10 @@ $(BUILD)/libSDL3.a: $(SDL_OBJS)
 # ---------------------------------------------------------------- sdl2-compat
 S2C      := $(DEPS)/sdl2-compat
 SDL2_INC := -I$(S2C)/include/SDL2 -I$(S2C)/include
-S2C_CFLAGS = $(OPT) -fno-strict-aliasing -w -I$(SDL)/include $(SDL2_INC) -I$(S2C)/src
+# (-Wno-error=incompatible-pointer-types: on DJGPP Sint32 is long, not int, so
+# gcc 14 rejects SDL3_GetWindowSize(window, &event.window.data1, ...); both are
+# 32 bits, so it is harmless)
+S2C_CFLAGS = $(OPT) -fno-strict-aliasing -w -Wno-error=incompatible-pointer-types -I$(SDL)/include $(SDL2_INC) -I$(S2C)/src
 
 $(BUILD)/s2c/sdl2_compat.o: $(S2C)/src/sdl2_compat.c
 	@mkdir -p $(dir $@)
