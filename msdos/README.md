@@ -72,13 +72,19 @@ A DOS PC can also be the server for the others.
 Building
 --------
 
-GNU make and Perl (the game generates some of its source), and either Docker
-or a DJGPP cross compiler on the PATH (i586-pc-msdosdjgpp-gcc; prebuilt:
-https://github.com/andrewwutw/build-djgpp/releases). As in SDLPoPDOS, the
-local compiler is used when there is one, otherwise the djfdyuruiry/djgpp
-Docker image, which the Makefile pulls.
+GNU make, Perl (the game generates some of its source) and flex (Watt-32
+generates its lang.c), and either Docker or a DJGPP cross compiler. As in
+SDLPoPDOS, the local compiler is used when there is one, otherwise the
+djfdyuruiry/djgpp Docker image, which the Makefile pulls.
+
+`sh build-djgpp.sh` builds the compiler the GitHub release is made with
+(gcc 14.2.0, binutils 2.42, jwt27's djgpp-cvs; about an hour) into ~/djgpp,
+where the Makefile finds it, as do /opt/djgpp and /usr/local/djgpp. Any other
+i586-pc-msdosdjgpp-gcc works on the PATH or with DJGPP=dir (prebuilt:
+https://github.com/andrewwutw/build-djgpp/releases).
 
     cd msdos
+    sh build-djgpp.sh   # once: the DJGPP cross compiler, into ~/djgpp
     make            # libraries, the game: rnd.exe (CWSDPMI inside) + data here
     make DOCKER=1   # compile in the Docker image even with a local compiler
     make DOCKER=0   # never use Docker

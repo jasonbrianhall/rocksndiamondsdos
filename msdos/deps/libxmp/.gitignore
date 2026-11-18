@@ -125,3 +125,6 @@ CMakeCache.txt
 cmake_install.cmake
 libxmp-config-version.cmake.autotools
 libxmp-lite-config-version.cmake.autotools
+
+# Rocks'n'Diamonds DOS: a source header, not a module file
+!src/loaders/mod.h
