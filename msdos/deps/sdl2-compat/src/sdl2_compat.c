@@ -3031,7 +3031,13 @@ EventFilter3to2(void *userdata, SDL_Event *event3)
                     }
 
                     /* The size changed event has the window size, not pixel size */
-                    SDL3_GetWindowSize(window, &event2.window.data1, &event2.window.data2);
+                    {
+                        /* DJGPP: Sint32 is long, not int (gcc 14 rejects the mix) */
+                        int w = 0, h = 0;
+                        SDL3_GetWindowSize(window, &w, &h);
+                        event2.window.data1 = w;
+                        event2.window.data2 = h;
+                    }
 
                     /* SDL2 behavior is to reset the renderer viewport rect when the window is resized and
                      * logical presentation is disabled.
