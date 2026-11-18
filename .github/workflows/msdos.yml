@@ -12,7 +12,7 @@ jobs:
     # Rocks'n'Diamonds for MS-DOS / FreeDOS: a 32-bit DJGPP program with
     # CWSDPMI built in. The compiler is the one msdos/build-djgpp.sh builds
     # (gcc 14.2.0), the same as a local build; it is cached, so only the
-    # first run (or a change to build-djgpp.sh) spends the hour building it.
+    # first run (or a change to build-djgpp.sh) spends ~10 minutes building it.
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -26,7 +26,7 @@ jobs:
 
     - name: Restore DJGPP
       id: djgpp-cache
-      uses: actions/cache@v4
+      uses: actions/cache/restore@v4
       with:
         path: ~/djgpp
         key: djgpp-${{ runner.os }}-${{ hashFiles('msdos/build-djgpp.sh') }}
@@ -36,6 +36,14 @@ jobs:
       working-directory: msdos
       run: |
         WORK="$RUNNER_TEMP/build-djgpp" sh build-djgpp.sh
+
+    # Saved as soon as it is built, so a failing game build doesn't throw it away.
+    - name: Save DJGPP
+      if: steps.djgpp-cache.outputs.cache-hit != 'true'
+      uses: actions/cache/save@v4
+      with:
+        path: ~/djgpp
+        key: djgpp-${{ runner.os }}-${{ hashFiles('msdos/build-djgpp.sh') }}
 
     - name: Build
       working-directory: msdos
